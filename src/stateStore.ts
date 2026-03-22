@@ -6,10 +6,10 @@ const STORAGE_KEY = 'branchWorkspaces.states';
 export class StateManager {
   constructor(private context: vscode.ExtensionContext) {}
 
-  public save(state: BranchState): void {
+  public async save(state: BranchState): Promise<void> {
     const store = this.getAll();
     store[state.branch] = state;
-    this.context.workspaceState.update(STORAGE_KEY, store);
+    await this.context.workspaceState.update(STORAGE_KEY, store);
   }
 
   public get(branch: string): BranchState | undefined {
@@ -21,14 +21,14 @@ export class StateManager {
     return this.context.workspaceState.get<StateStore>(STORAGE_KEY) || {};
   }
 
-  public delete(branch: string): void {
+  public async delete(branch: string): Promise<void> {
     const store = this.getAll();
     delete store[branch];
-    this.context.workspaceState.update(STORAGE_KEY, store);
+    await this.context.workspaceState.update(STORAGE_KEY, store);
   }
 
-  public clearAll(): void {
-    this.context.workspaceState.update(STORAGE_KEY, {});
+  public async clearAll(): Promise<void> {
+    await this.context.workspaceState.update(STORAGE_KEY, {});
   }
 
   public getBranchCount(): number {

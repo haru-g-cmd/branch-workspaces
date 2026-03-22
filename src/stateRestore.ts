@@ -11,6 +11,8 @@ export async function restoreState(state: BranchState): Promise<void> {
   // Close all existing tabs if configured
   if (closeTabs) {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    // Small delay to let VS Code finish closing tabs before opening new ones
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   if (state.groups.length === 0) { return; }

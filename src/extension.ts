@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Save state for the branch we're leaving
     if (from) {
       const state = captureState(from);
-      stateManager.save(state);
+      await stateManager.save(state);
     }
 
     // Restore state for the branch we're switching to
@@ -52,9 +52,9 @@ export function activate(context: vscode.ExtensionContext) {
     if (saveDebounceTimer) { clearTimeout(saveDebounceTimer); }
     const debounceMs = config.get<number>('debounceMs', 500);
 
-    saveDebounceTimer = setTimeout(() => {
+    saveDebounceTimer = setTimeout(async () => {
       const state = captureState(branch);
-      stateManager.save(state);
+      await stateManager.save(state);
       updateStatusBar();
     }, debounceMs);
   };
@@ -68,14 +68,14 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('branchWorkspaces.saveState', () => {
+    vscode.commands.registerCommand('branchWorkspaces.saveState', async () => {
       const branch = gitWatcher.getBranch();
       if (!branch) {
         vscode.window.showWarningMessage('Branch Workspaces: No Git branch detected.');
         return;
       }
       const state = captureState(branch);
-      stateManager.save(state);
+      await stateManager.save(state);
       updateStatusBar();
       vscode.window.setStatusBarMessage(`$(check) State saved for branch: ${branch}`, 3000);
     }),
@@ -95,13 +95,13 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.setStatusBarMessage(`$(check) Restored workspace for branch: ${branch}`, 3000);
     }),
 
-    vscode.commands.registerCommand('branchWorkspaces.clearState', () => {
+    vscode.commands.registerCommand('branchWorkspaces.clearState', async () => {
       const branch = gitWatcher.getBranch();
       if (!branch) {
         vscode.window.showWarningMessage('Branch Workspaces: No Git branch detected.');
         return;
       }
-      stateManager.delete(branch);
+      await stateManager.delete(branch);
       updateStatusBar();
       vscode.window.showInformationMessage(`Branch Workspaces: Cleared state for branch "${branch}".`);
     }),
@@ -114,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
         'Clear All'
       );
       if (answer === 'Clear All') {
-        stateManager.clearAll();
+        await stateManager.clearAll();
         updateStatusBar();
         vscode.window.showInformationMessage('Branch Workspaces: All saved states cleared.');
       }

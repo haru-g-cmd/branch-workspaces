@@ -4,6 +4,7 @@ import * as path from 'path';
 
 export class GitWatcher implements vscode.Disposable {
   private watcher: fs.FSWatcher | null = null;
+  private pollInterval: NodeJS.Timeout | null = null;
   private currentBranch: string | null = null;
   private readonly onBranchChangeEmitter = new vscode.EventEmitter<{ from: string | null; to: string }>();
   public readonly onBranchChange = this.onBranchChangeEmitter.event;
@@ -70,19 +71,23 @@ export class GitWatcher implements vscode.Disposable {
   private startWatching(): void {
     if (!this.gitDir) { return; }
 
-    const headPath = path.join(this.gitDir, 'HEAD');
-
+    // Watch the .git directory instead of just HEAD file.
+    // On Windows, fs.watch on individual files misses atomic writes
+    // (git writes to a temp file then renames). Watching the directory
+    // catches the rename event reliably.
     try {
-      this.watcher = fs.watch(headPath, () => {
-        // Debounce: git operations can trigger multiple rapid writes
-        if (this.debounceTimer) { clearTimeout(this.debounceTimer); }
-        this.debounceTimer = setTimeout(() => this.checkBranch(), 150);
+      this.watcher = fs.watch(this.gitDir, (eventType, filename) => {
+        if (filename === 'HEAD' || filename === null) {
+          if (this.debounceTimer) { clearTimeout(this.debounceTimer); }
+          this.debounceTimer = setTimeout(() => this.checkBranch(), 150);
+        }
       });
     } catch {
-      // Fallback: poll every 2 seconds if fs.watch fails
-      const interval = setInterval(() => this.checkBranch(), 2000);
-      this.watcher = { close: () => clearInterval(interval) } as any;
+      // fs.watch not available
     }
+
+    // Always poll as backup. fs.watch can silently stop on some systems.
+    this.pollInterval = setInterval(() => this.checkBranch(), 1000);
   }
 
   private checkBranch(): void {
@@ -100,6 +105,7 @@ export class GitWatcher implements vscode.Disposable {
 
   public dispose(): void {
     if (this.debounceTimer) { clearTimeout(this.debounceTimer); }
+    if (this.pollInterval) { clearInterval(this.pollInterval); }
     if (this.watcher) { this.watcher.close(); }
     this.onBranchChangeEmitter.dispose();
   }

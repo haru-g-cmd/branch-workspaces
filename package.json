@@ -2,9 +2,13 @@
   "name": "branch-workspaces",
   "displayName": "Branch Workspaces",
   "description": "Automatically saves and restores your open tabs, editor layout, scroll positions, and cursors when you switch Git branches.",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "publisher": "haru-g",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haru-g-cmd/branch-workspaces"
+  },
   "engines": {
     "vscode": "^1.110.0"
   },
