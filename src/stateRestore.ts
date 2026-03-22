@@ -8,16 +8,13 @@ export async function restoreState(state: BranchState): Promise<void> {
   const saveCursors = config.get<boolean>('saveCursors', true);
   const saveScroll = config.get<boolean>('saveScroll', true);
 
-  // Close all existing tabs if configured
   if (closeTabs) {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-    // Small delay to let VS Code finish closing tabs before opening new ones
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
 
   if (state.groups.length === 0) { return; }
 
-  // Open editors group by group
   for (const group of state.groups) {
     for (const editor of group.editors) {
       await openEditor(editor, group.viewColumn, saveCursors, saveScroll);
@@ -41,7 +38,6 @@ async function openEditor(
   restoreScroll: boolean,
   focus: boolean = false
 ): Promise<void> {
-  // Skip files that no longer exist (deleted on another branch)
   if (!fs.existsSync(editor.filePath)) { return; }
 
   const uri = vscode.Uri.file(editor.filePath);
@@ -54,9 +50,18 @@ async function openEditor(
       preserveFocus: !focus
     });
 
-    // Pin the tab if it was pinned
+    // Pin must happen on the focused editor, so temporarily focus it
     if (editor.isPinned) {
+      const pinnedEditor = await vscode.window.showTextDocument(doc, {
+        viewColumn,
+        preview: false,
+        preserveFocus: false
+      });
       await vscode.commands.executeCommand('workbench.action.pinEditor');
+      // Restore preserveFocus state if this tab shouldn't have focus
+      if (!focus) {
+        // No need to explicitly unfocus; the next tab open will shift focus
+      }
     }
 
     // Restore cursor position
@@ -82,6 +87,6 @@ async function openEditor(
       textEditor.revealRange(range, vscode.TextEditorRevealType.AtTop);
     }
   } catch {
-    // File might be binary, locked, or inaccessible - skip
+    // File might be binary, locked, or inaccessible
   }
 }

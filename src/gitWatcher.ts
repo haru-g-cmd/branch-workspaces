@@ -53,12 +53,11 @@ export class GitWatcher implements vscode.Disposable {
       const headPath = path.join(this.gitDir, 'HEAD');
       const content = fs.readFileSync(headPath, 'utf8').trim();
 
-      // Symbolic ref: "ref: refs/heads/main"
       const match = content.match(/^ref: refs\/heads\/(.+)$/);
       if (match) { return match[1]; }
 
-      // Detached HEAD: raw commit hash, use first 8 chars
-      if (/^[0-9a-f]{40}$/.test(content)) {
+      // Detached HEAD: raw commit hash
+      if (/^[0-9a-f]{40,64}$/.test(content)) {
         return `detached:${content.substring(0, 8)}`;
       }
 
@@ -71,10 +70,6 @@ export class GitWatcher implements vscode.Disposable {
   private startWatching(): void {
     if (!this.gitDir) { return; }
 
-    // Watch the .git directory instead of just HEAD file.
-    // On Windows, fs.watch on individual files misses atomic writes
-    // (git writes to a temp file then renames). Watching the directory
-    // catches the rename event reliably.
     try {
       this.watcher = fs.watch(this.gitDir, (eventType, filename) => {
         if (filename === 'HEAD' || filename === null) {
@@ -83,10 +78,10 @@ export class GitWatcher implements vscode.Disposable {
         }
       });
     } catch {
-      // fs.watch not available
+      // fs.watch not available on this platform
     }
 
-    // Always poll as backup. fs.watch can silently stop on some systems.
+    // Always poll as backup in case fs.watch silently stops
     this.pollInterval = setInterval(() => this.checkBranch(), 1000);
   }
 
