@@ -1,0 +1,113 @@
+{
+  "name": "branch-workspaces",
+  "displayName": "Branch Workspaces",
+  "description": "Automatically saves and restores your open tabs, editor layout, scroll positions, and cursors when you switch Git branches.",
+  "version": "1.0.1",
+  "publisher": "haru-g",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "branch",
+    "tabs",
+    "workspace",
+    "context switch",
+    "restore tabs",
+    "save tabs"
+  ],
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "branchWorkspaces.saveState",
+        "title": "Branch Workspaces: Save Current State"
+      },
+      {
+        "command": "branchWorkspaces.restoreState",
+        "title": "Branch Workspaces: Restore State for Current Branch"
+      },
+      {
+        "command": "branchWorkspaces.clearState",
+        "title": "Branch Workspaces: Clear State for Current Branch"
+      },
+      {
+        "command": "branchWorkspaces.clearAll",
+        "title": "Branch Workspaces: Clear All Saved States"
+      }
+    ],
+    "configuration": {
+      "title": "Branch Workspaces",
+      "properties": {
+        "branchWorkspaces.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic save/restore of workspace state on branch switch."
+        },
+        "branchWorkspaces.saveTabs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save and restore open editor tabs."
+        },
+        "branchWorkspaces.saveLayout": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save and restore editor group layout (splits)."
+        },
+        "branchWorkspaces.saveCursors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save and restore cursor positions."
+        },
+        "branchWorkspaces.saveScroll": {
+          "type": "boolean",
+          "default": true,
+          "description": "Save and restore scroll positions."
+        },
+        "branchWorkspaces.closeTabs": {
+          "type": "boolean",
+          "default": true,
+          "description": "Close current tabs before restoring a branch's tabs."
+        },
+        "branchWorkspaces.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show branch workspace info in the status bar."
+        },
+        "branchWorkspaces.debounceMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 5000,
+          "description": "Debounce time (ms) before saving state after editor changes."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.110.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^7.0.2"
+  }
+}
