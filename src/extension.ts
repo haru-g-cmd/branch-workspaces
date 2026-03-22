@@ -20,25 +20,27 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Branch switch handler
   gitWatcher.onBranchChange(async ({ from, to }) => {
-    const config = vscode.workspace.getConfiguration('branchWorkspaces');
-    if (!config.get<boolean>('enabled', true)) { return; }
+    try {
+      const config = vscode.workspace.getConfiguration('branchWorkspaces');
+      if (!config.get<boolean>('enabled', true)) { return; }
 
-    // Save state for the branch we're leaving
-    if (from) {
-      const state = captureState(from);
-      await stateManager.save(state);
+      if (from) {
+        const state = captureState(from);
+        await stateManager.save(state);
+      }
+
+      const savedState = stateManager.get(to);
+      if (savedState) {
+        await restoreState(savedState);
+        vscode.window.setStatusBarMessage(`$(check) Restored workspace for branch: ${to}`, 3000);
+      } else {
+        vscode.window.setStatusBarMessage(`$(git-branch) Switched to branch: ${to} (no saved state)`, 3000);
+      }
+
+      updateStatusBar();
+    } catch {
+      // Silent fail on branch switch errors
     }
-
-    // Restore state for the branch we're switching to
-    const savedState = stateManager.get(to);
-    if (savedState) {
-      await restoreState(savedState);
-      vscode.window.setStatusBarMessage(`$(check) Restored workspace for branch: ${to}`, 3000);
-    } else {
-      vscode.window.setStatusBarMessage(`$(git-branch) Switched to branch: ${to} (no saved state)`, 3000);
-    }
-
-    updateStatusBar();
   });
 
   // Auto-save on editor changes (debounced)
@@ -145,15 +147,16 @@ function updateStatusBar(): void {
   statusBarItem.show();
 }
 
-export function deactivate() {
-  // Save state one last time on deactivation
+export function deactivate(): Thenable<void> | undefined {
+  if (saveDebounceTimer) { clearTimeout(saveDebounceTimer); }
+
   if (gitWatcher && stateManager) {
     const branch = gitWatcher.getBranch();
     if (branch) {
       const state = captureState(branch);
-      stateManager.save(state);
+      return stateManager.save(state);
     }
   }
 
-  if (saveDebounceTimer) { clearTimeout(saveDebounceTimer); }
+  return undefined;
 }
